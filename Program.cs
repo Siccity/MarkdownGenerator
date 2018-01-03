@@ -26,34 +26,38 @@ namespace MarkdownWikiGenerator
                 dest = args[1];
             }
 
-            var types = MarkdownGenerator.Load(target);
+            MarkdownableType[] types = MarkdownGenerator.Load(target);
 
-            // Home Markdown Builder
-            var homeBuilder = new MarkdownBuilder();
+
+
+            BuildHome(types, dest);
+        }
+    
+        /// <summary> Build Home.md </summary>
+        static void BuildHome (MarkdownableType[] types, string destination) {
+            MarkdownBuilder homeBuilder = new MarkdownBuilder();
             homeBuilder.Header(1, "References");
             homeBuilder.AppendLine();
 
-            foreach (var g in types.GroupBy(x => x.Namespace).OrderBy(x => x.Key))
-            {
-                if (!Directory.Exists(dest)) Directory.CreateDirectory(dest);
+            foreach (var g in types.GroupBy(x => x.Namespace).OrderBy(x => x.Key)) {
+                if (!Directory.Exists(destination)) Directory.CreateDirectory(destination);
 
                 homeBuilder.HeaderWithLink(2, g.Key, g.Key);
                 homeBuilder.AppendLine();
 
                 var sb = new StringBuilder();
-                foreach (var item in g.OrderBy(x => x.Name))
-                {
+                foreach (var item in g.OrderBy(x => x.Name)) {
                     homeBuilder.ListLink(MarkdownBuilder.MarkdownCodeQuote(item.BeautifyName), g.Key + "#" + item.BeautifyName.Replace("<", "").Replace(">", "").Replace(",", "").Replace(" ", "-").ToLower());
 
                     sb.Append(item.ToString());
                 }
 
-                File.WriteAllText(Path.Combine(dest, g.Key + ".md"), sb.ToString());
+                File.WriteAllText(Path.Combine(destination, g.Key + ".md"), sb.ToString());
                 homeBuilder.AppendLine();
             }
 
-            // Gen Home
-            File.WriteAllText(Path.Combine(dest, "Home.md"), homeBuilder.ToString());
+            // Write Home.md
+            File.WriteAllText(Path.Combine(destination, "Home.md"), homeBuilder.ToString());
         }
     }
 }

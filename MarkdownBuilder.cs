@@ -5,13 +5,12 @@ namespace MarkdownWikiGenerator
 {
     public class MarkdownBuilder
     {
+        StringBuilder sb = new StringBuilder();
+
         public static string MarkdownCodeQuote(string code)
         {
             return "`" + code + "`";
         }
-
-
-        StringBuilder sb = new StringBuilder();
 
         public void Append(string text)
         {
