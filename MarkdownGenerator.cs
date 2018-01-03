@@ -154,9 +154,6 @@ namespace MarkdownWikiGenerator
         {
             var mb = new MarkdownBuilder();
 
-            mb.HeaderWithCode(2, Beautifier.BeautifyType(type, false));
-            mb.AppendLine();
-
             var desc = commentLookup[type.FullName].FirstOrDefault(x => x.MemberType == MemberType.Type)?.Summary ?? "";
             if (desc != "")
             {
@@ -207,36 +204,30 @@ namespace MarkdownWikiGenerator
     }
 
 
-    public static class MarkdownGenerator
-    {
-        public static MarkdownableType[] Load(string dllPath)
-        {
-            var xmlPath = Path.Combine(Directory.GetParent(dllPath).FullName, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
+    public static class MarkdownGenerator {
+        public static MarkdownableType[] Load(string dllPath, List<string> whitelist) {
+            string xmlPath = Path.Combine(Directory.GetParent(dllPath).FullName, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
 
             XmlDocumentComment[] comments = new XmlDocumentComment[0];
-            if (File.Exists(xmlPath))
-            {
+            if (File.Exists(xmlPath)) {
                 comments = VSDocParser.ParseXmlComment(XDocument.Parse(File.ReadAllText(xmlPath)));
             }
             var commentsLookup = comments.ToLookup(x => x.ClassName);
 
-            var markdownableTypes = new[] { Assembly.LoadFrom(dllPath) }
-                .SelectMany(x =>
-                {
-                    try
-                    {
+            MarkdownableType[] markdownableTypes = new[] { Assembly.LoadFrom(dllPath) }
+                .SelectMany(x => {
+                    try {
                         return x.GetTypes();
                     }
-                    catch (ReflectionTypeLoadException ex)
-                    {
+                    catch (ReflectionTypeLoadException ex) {
                         return ex.Types.Where(t => t != null);
                     }
-                    catch
-                    {
+                    catch {
                         return Type.EmptyTypes;
                     }
                 })
-                .Where(x => x != null)
+                .Where(x => x != null) // Filter null types
+                .Where(x => whitelist == null || whitelist.Contains(x.Namespace)) // Filter namespace by whitelist
                 .Where(x => x.IsPublic && !typeof(Delegate).IsAssignableFrom(x) && !x.GetCustomAttributes<ObsoleteAttribute>().Any())
                 .Select(x => new MarkdownableType(x, commentsLookup))
                 .ToArray();

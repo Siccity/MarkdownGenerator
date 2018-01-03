@@ -13,28 +13,42 @@ namespace MarkdownWikiGenerator
         // 0 = dll src path, 1 = dest root
         static void Main(string[] args)
         {
-            // put dll & xml on same diretory.
-            var target = "UniRx.dll"; // :)
-            string dest = "md";
-            if (args.Length == 1)
-            {
-                target = args[0];
+            string target = null; // target .dll file
+            string destination = "md"; // where to store generated md files
+            bool namespaces = true; // include namespaces in filename
+            List<string> whitelist = null; // Whitelist namespaces
+
+            //Parse args
+            foreach (string arg in args) {
+                if (arg.EndsWith(".dll", StringComparison.CurrentCultureIgnoreCase)) target = arg;
+                else if (Directory.Exists(arg)) destination = arg;
+                else if (arg == "-nonamespace") namespaces = false;
+                else if (arg.Contains('=')) {
+                    string[] splitArgs = arg.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (splitArgs.Length == 2) {
+                        if (splitArgs[0] == "-whitelist") {
+                            if (whitelist == null) whitelist = new List<string>();
+                            whitelist.Add(splitArgs[1]);
+                        }
+                    }
+                }
             }
-            else if (args.Length == 2)
-            {
-                target = args[0];
-                dest = args[1];
+
+            if (target == null) {
+                Console.WriteLine("No input");
+                Console.ReadLine();
             }
 
-            MarkdownableType[] types = MarkdownGenerator.Load(target);
+            MarkdownableType[] types = MarkdownGenerator.Load(target, whitelist);
+            if (!Directory.Exists(destination)) Directory.CreateDirectory(destination);
 
-
-
-            BuildHome(types, dest);
+            //BuildHome(types, dest);
+            BuildClasses(types, destination, namespaces);
+            Console.ReadLine();
         }
     
         /// <summary> Build Home.md </summary>
-        static void BuildHome (MarkdownableType[] types, string destination) {
+        /*static void BuildHome (MarkdownableType[] types, string destination) {
             MarkdownBuilder homeBuilder = new MarkdownBuilder();
             homeBuilder.Header(1, "References");
             homeBuilder.AppendLine();
@@ -52,12 +66,20 @@ namespace MarkdownWikiGenerator
                     sb.Append(item.ToString());
                 }
 
-                File.WriteAllText(Path.Combine(destination, g.Key + ".md"), sb.ToString());
+                //File.WriteAllText(Path.Combine(destination, g.Key + ".md"), sb.ToString());
                 homeBuilder.AppendLine();
             }
 
             // Write Home.md
             File.WriteAllText(Path.Combine(destination, "Home.md"), homeBuilder.ToString());
+        }*/
+
+        static void BuildClasses(MarkdownableType[] types, string destination, bool namespaces) {
+            foreach(MarkdownableType type in types) {
+                string filename = (namespaces ? type.Namespace + "." : "") + type.BeautifyName + ".md";
+                File.WriteAllText(Path.Combine(destination, filename), type.ToString());
+                Console.WriteLine(type.Namespace + " " + type.Name + " " + type.BeautifyName);
+            }
         }
     }
 }
