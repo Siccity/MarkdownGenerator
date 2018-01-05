@@ -80,7 +80,13 @@ namespace MarkdownWikiGenerator
             foreach(MarkdownableType type in types) {
                 string filename = (namespaces ? type.Namespace + "." : "") + type.BeautifyName + ".md";
                 File.WriteAllText(Path.Combine(destination, filename), type.ToString());
-                Console.WriteLine(type.Namespace + " " + type.Name + " " + type.BeautifyName);
+                Console.WriteLine(type.Namespace + "." + type.Name);
+
+                foreach(MarkdownableMethod method in type.methods) {
+                    filename = (namespaces ? type.Namespace + "." : "") + type.BeautifyName + "." + method.Name + ".md";
+                    File.WriteAllText(Path.Combine(destination, filename), method.ToString());
+                    Console.WriteLine(type.Namespace + "." + type.Name + "." + method.Name);
+                }
             }
         }
     }

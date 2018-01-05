@@ -14,6 +14,7 @@ namespace MarkdownWikiGenerator
     {
         readonly Type type;
         readonly ILookup<string, XmlDocumentComment> commentLookup;
+        public readonly MarkdownableMethod[] methods;
 
         public string Namespace => type.Namespace;
         public string Name => type.Name;
@@ -23,6 +24,7 @@ namespace MarkdownWikiGenerator
         {
             this.type = type;
             this.commentLookup = commentLookup;
+            methods = GetMethods().Select(x => new MarkdownableMethod(x, commentLookup)).ToArray();
         }
 
         MethodInfo[] GetMethods()
@@ -203,6 +205,64 @@ namespace MarkdownWikiGenerator
         }
     }
 
+    public class MarkdownableMethod {
+        readonly MethodInfo methodInfo;
+        readonly ILookup<string, XmlDocumentComment> commentLookup;
+
+        public string Name => methodInfo.Name;
+        public string Returns => methodInfo.ReturnType.BeautifyType();
+        public Type DeclaringType => methodInfo.DeclaringType;
+        public MarkdownableMethod(MethodInfo methodInfo, ILookup<string, XmlDocumentComment> commentLookup) {
+            this.methodInfo = methodInfo;
+            this.commentLookup = commentLookup;
+        }
+
+        void BuildTable<T>(MarkdownBuilder mb, string label, T[] array, IEnumerable<XmlDocumentComment> docs, Func<T, string> type, Func<T, string> name, Func<T, string> finalName) {
+            if (array.Any()) {
+                mb.AppendLine(label);
+                mb.AppendLine();
+
+                string[] head = new[] { "Type", "Name", "Summary" };
+
+                IEnumerable<T> seq = array;
+
+                var data = seq.Select(item2 => {
+                    var summary = docs.FirstOrDefault(x => x.MemberName == name(item2))?.Summary ?? "";
+                    return new[] { MarkdownBuilder.MarkdownCodeQuote(type(item2)), finalName(item2), summary };
+                });
+
+                mb.Table(head, data);
+                mb.AppendLine();
+            }
+        }
+
+        public override string ToString() {
+            var mb = new MarkdownBuilder();
+
+            var desc = commentLookup[DeclaringType.FullName].FirstOrDefault(x => x.MemberType == MemberType.Method && x.MemberName == methodInfo.Name)?.Summary ?? "";
+            if (desc != "") {
+                mb.AppendLine(desc);
+            }
+            {
+                var sb = new StringBuilder();
+
+                var stat = (methodInfo.IsStatic) ? "static " : "";
+                var abst = (methodInfo.IsAbstract) ? "abstract " : "";
+
+                sb.AppendLine($"public {stat}{abst}{Returns} {Name}");
+                /*var impl = string.Join(", ", new[] { methodInfo.Name}.Concat(type.GetInterfaces()).Where(x => x != null && x != typeof(object) && x != typeof(ValueType)).Select(x => Beautifier.BeautifyType(x)));
+                if (impl != "") {
+                    sb.AppendLine("    : " + impl);
+                }*/
+
+                mb.Code("csharp", sb.ToString());
+            }
+
+            mb.AppendLine();
+
+            return mb.ToString();
+        }
+    }
 
     public static class MarkdownGenerator {
         public static MarkdownableType[] Load(string dllPath, List<string> whitelist) {

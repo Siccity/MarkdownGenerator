@@ -10,7 +10,7 @@ namespace MarkdownWikiGenerator
 {
     public static class Beautifier
     {
-        public static string BeautifyType(Type t, bool isFull = false)
+        public static string BeautifyType(this Type t, bool isFull = false)
         {
             if (t == null) return "";
             if (t == typeof(void)) return "void";
