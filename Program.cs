@@ -20,8 +20,10 @@ namespace MarkdownWikiGenerator
 
             //Parse args
             foreach (string arg in args) {
-                if (arg.EndsWith(".dll", StringComparison.CurrentCultureIgnoreCase)) target = arg;
-                else if (Directory.Exists(arg)) destination = arg;
+                if (arg.EndsWith(".dll", StringComparison.CurrentCultureIgnoreCase)) {
+                    if (File.Exists(arg)) target = arg;
+                    else Console.WriteLine("Target .dll not found at " + arg);
+                } else if (Directory.Exists(arg)) destination = arg;
                 else if (arg == "-nonamespace") namespaces = false;
                 else if (arg.Contains('=')) {
                     string[] splitArgs = arg.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
@@ -35,7 +37,7 @@ namespace MarkdownWikiGenerator
             }
 
             if (target == null) {
-                Console.WriteLine("No input");
+                Console.WriteLine("No target .dll");
                 Console.ReadLine();
             }
 
