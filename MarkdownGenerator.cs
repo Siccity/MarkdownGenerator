@@ -211,10 +211,18 @@ namespace MarkdownWikiGenerator
 
         public string Name => methodInfo.Name;
         public string Returns => methodInfo.ReturnType.BeautifyType();
+
+
         public Type DeclaringType => methodInfo.DeclaringType;
         public MarkdownableMethod(MethodInfo methodInfo, ILookup<string, XmlDocumentComment> commentLookup) {
             this.methodInfo = methodInfo;
             this.commentLookup = commentLookup;
+        }
+
+        public string GetParameters() {
+            ParameterInfo[] ps = methodInfo.GetParameters();
+            IEnumerable<string> ts = ps.Select(x => x.ParameterType.BeautifyType() + " " + x.Name);
+            return string.Join(", ", ts);
         }
 
         void BuildTable<T>(MarkdownBuilder mb, string label, T[] array, IEnumerable<XmlDocumentComment> docs, Func<T, string> type, Func<T, string> name, Func<T, string> finalName) {
@@ -249,7 +257,7 @@ namespace MarkdownWikiGenerator
                 var stat = (methodInfo.IsStatic) ? "static " : "";
                 var abst = (methodInfo.IsAbstract) ? "abstract " : "";
 
-                sb.AppendLine($"public {stat}{abst}{Returns} {Name}");
+                sb.AppendLine($"public {stat}{abst}{Returns} {Name}({GetParameters()})");
                 /*var impl = string.Join(", ", new[] { methodInfo.Name}.Concat(type.GetInterfaces()).Where(x => x != null && x != typeof(object) && x != typeof(ValueType)).Select(x => Beautifier.BeautifyType(x)));
                 if (impl != "") {
                     sb.AppendLine("    : " + impl);
